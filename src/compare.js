@@ -11,10 +11,14 @@ function _compare(actual, expected, rules, regex_rules, path) {
   if (rule) {
     compareWithRule(actual, expected, rules, regex_rules, path, rule);
   } else {
-    typeCompare(actual, expected, path);
-    arrayCompare(actual, expected, rules, regex_rules, path);
-    objectCompare(actual, expected, rules, regex_rules, path);
-    valueCompare(actual, expected, path);
+    let  = [];
+    typeCompare(actual, expected, path, errors);
+    arrayCompare(actual, expected, rules, regex_rules, path, errors);
+    objectCompare(actual, expected, rules, regex_rules, path, errors);
+    valueCompare(actual, expected, path, errors);
+    if (errors.length > 0) {
+      throw errors;
+    }
   }
   return '';
 }
@@ -307,18 +311,18 @@ function compareWithNotEquals(actual, expected, path) {
   }
 }
 
-function typeCompare(actual, expected, path) {
+function typeCompare(actual, expected, path, errors) {
   const actualType = getType(actual);
   const expectedType = getType(expected);
   if (actualType !== expectedType) {
-    throw `Json doesn't have type '${expectedType}' at '${path}' but found '${actualType}'`;
+    errors.push(`Json doesn't have a value '${expected}' at '${path}' but found '${actual}'`);
   }
 }
 
-function arrayCompare(actual, expected, rules, regex_rules, path) {
+function arrayCompare(actual, expected, rules, regex_rules, path, errors) {
   if (getType(expected) === 'array') {
     if (actual.length !== expected.length) {
-      throw `Json doesn't have 'array' with length '${expected.length}' at '${path}' but found 'array' with length '${actual.length}'`;
+      errors.push(`Json doesn't have 'array' with length '${expected.length}' at '${path}' but found 'array' with length '${actual.length}'\n`)
     }
     for (let i = 0; i < expected.length; i++) {
       _compare(actual[i], expected[i], rules, regex_rules, `${path}[${i}]`);
@@ -326,20 +330,22 @@ function arrayCompare(actual, expected, rules, regex_rules, path) {
   }
 }
 
-function objectCompare(actual, expected, rules, regex_rules, path) {
+function objectCompare(actual, expected, rules, regex_rules, path, errors) {
   if (getType(expected) === 'object') {
     for (const prop in expected) {
       if (!Object.prototype.hasOwnProperty.call(actual, prop)) {
-        throw `Json doesn't have property '${prop}' at '${path}'`;
+        errors.push(`Json doesn't have property '${prop}' at '${path}'\n`)
       }
       _compare(actual[prop], expected[prop], rules, regex_rules, `${path}.${prop}`);
     }
   }
 }
 
-function valueCompare(actual, expected, path) {
+function valueCompare(actual, expected, path, errors) {
   if (isPrimitive(expected)) {
-    if (actual !== expected) throw `Json doesn't have a value '${expected}' at '${path}' but found '${actual}'`;
+    if (actual !== expected) {
+      errors.push(`Json doesn't have a value '${expected}' at '${path}' but found '${actual}'\n`)
+    }
   }
 }
 
