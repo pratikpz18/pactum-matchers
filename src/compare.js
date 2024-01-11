@@ -11,7 +11,7 @@ function _compare(actual, expected, rules, regex_rules, path) {
   if (rule) {
     compareWithRule(actual, expected, rules, regex_rules, path, rule);
   } else {
-    let  = [];
+    let errors = [];
     typeCompare(actual, expected, path, errors);
     arrayCompare(actual, expected, rules, regex_rules, path, errors);
     objectCompare(actual, expected, rules, regex_rules, path, errors);
