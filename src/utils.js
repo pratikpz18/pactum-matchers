@@ -7,10 +7,14 @@ function setMatchingRules(rules, data, path) {
 }
 
 function compare(actual, expected, rules, path, strict) {
+  let errors = [];
   try {
-    _compare(actual, expected, rules, path);
+    _compare(actual, expected, rules, path, errors);
     if (strict) {
-      _compare(expected, actual, rules, path);
+      _compare(expected, actual, rules, path, errors);
+    }
+    if (errors.length > 0) {
+      throw errors;
     }
   } catch (error) {
     return {

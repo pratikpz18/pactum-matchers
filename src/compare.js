@@ -1,24 +1,20 @@
 const { isPrimitive, getType } = require('./helpers');
 const patterns = require('./patterns');
 
-function compare(actual, expected, rules, path) {
+function compare(actual, expected, rules, path, errors) {
   const regex_rules = getRegExRules(rules);
-  return _compare(actual, expected, rules, regex_rules, path);
+  return _compare(actual, expected, rules, regex_rules, path, errors);
 }
 
-function _compare(actual, expected, rules, regex_rules, path) {
-  const rule = getCurrentPathRule(rules, regex_rules, path);
+function _compare(actual, expected, rules, regex_rules, path, errors) {
+  const rule = getCurrentPathRule(rules, regex_rules, path, errors);
   if (rule) {
-    compareWithRule(actual, expected, rules, regex_rules, path, rule);
+    compareWithRule(actual, expected, rules, regex_rules, path, rule, errors);
   } else {
-    let errors = [];
     typeCompare(actual, expected, path, errors);
     arrayCompare(actual, expected, rules, regex_rules, path, errors);
     objectCompare(actual, expected, rules, regex_rules, path, errors);
     valueCompare(actual, expected, path, errors);
-    if (errors.length > 0) {
-      throw errors;
-    }
   }
   return '';
 }
@@ -78,67 +74,67 @@ function getCurrentPathRule(rules, regex_rules, path) {
   return getCurrentPathRuleUsingRegEx(regex_rules, path)
 }
 
-function compareWithRule(actual, expected, rules, regex_rules, path, rule) {
+function compareWithRule(actual, expected, rules, regex_rules, path, rule, errors) {
   switch (rule.match) {
     case 'type':
-      compareWithRuleType(actual, expected, rules, regex_rules, path, rule);
+      compareWithRuleType(actual, expected, rules, regex_rules, path, rule, errors);
       break;
     case 'regex':
-      compareWithRuleRegex(actual, rule, path);
+      compareWithRuleRegex(actual, rule, path, errors);
       break;
     case 'oneOf':
-      compareWithRuleOneOf(actual, rule, path);
+      compareWithRuleOneOf(actual, rule, path, errors);
       break;
     case 'expr':
-      compareWithRuleExpr(actual, rule, path);
+      compareWithRuleExpr(actual, rule, path, errors);
       break;
     case 'string':
-      compareWithString(actual, rule, path);
+      compareWithString(actual, rule, path, errors);
       break;
     case 'uuid':
-      compareWithUUID(actual, rule, path);
+      compareWithUUID(actual, rule, path, errors);
       break;
     case 'email':
-      compareWithEmail(actual, rule, path);
+      compareWithEmail(actual, rule, path, errors);
       break;
     case 'any':
-      compareWithAny(actual, rule, path);
+      compareWithAny(actual, rule, path, errors);
       break;
     case 'int':
-      compareWithInt(actual, rule, path);
+      compareWithInt(actual, rule, path, errors);
       break;
     case 'float':
-      compareWithFloat(actual, rule, path);
+      compareWithFloat(actual, rule, path, errors);
       break;
     case 'gt':
-      compareWithGt(actual, expected, rule, path);
+      compareWithGt(actual, expected, rule, path, errors);
       break;
     case 'gte':
-      compareWithGte(actual, expected, rule, path);
+      compareWithGte(actual, expected, rule, path, errors);
       break;
     case 'lt':
-      compareWithLt(actual, expected, rule, path);
+      compareWithLt(actual, expected, rule, path, errors);
       break;
     case 'lte':
-      compareWithLte(actual, expected, rule, path);
+      compareWithLte(actual, expected, rule, path, errors);
       break;
     case 'not_includes':
-      compareNotIncludes(actual, expected, rule, path);
+      compareNotIncludes(actual, expected, rule, path, errors);
       break;
     case 'not_null':
-      compareWithNotNull(actual, path);
+      compareWithNotNull(actual, path, errors);
       break;
     case 'not_equals':
-      compareWithNotEquals(actual, expected, path);
+      compareWithNotEquals(actual, expected, path, errors);
       break;
     case 'iso':
-      compareWithISO(actual, expected, path);
+      compareWithISO(actual, expected, path, errors);
       break;
   }
 }
 
-function compareWithRuleType(actual, expected, rules, regex_rules, path, rule) {
-  typeCompare(actual, expected, path);
+function compareWithRuleType(actual, expected, rules, regex_rules, path, rule, errors) {
+  typeCompare(actual, expected, path, errors);
   const type = getType(expected);
   if (type === 'array') {
     if (typeof rule.min !== 'undefined') {
@@ -147,15 +143,15 @@ function compareWithRuleType(actual, expected, rules, regex_rules, path, rule) {
       }
       if (rule.min > 0 || typeof expected[0] !== 'undefined') {
         for (let i = 0; i < actual.length; i++) {
-          _compare(actual[i], expected[0], rules, regex_rules, `${path}[${i}]`);
+          _compare(actual[i], expected[0], rules, regex_rules, `${path}[${i}]`, errors);
         }
       }
     } else {
-      arrayCompare(actual, expected, rules, regex_rules, path);
+      arrayCompare(actual, expected, rules, regex_rules, path, errors);
     }
     
   } else if (type === 'object') {
-    objectCompare(actual, expected, rules, regex_rules, path);
+    objectCompare(actual, expected, rules, regex_rules, path, errors);
   }
 }
 
@@ -325,7 +321,7 @@ function arrayCompare(actual, expected, rules, regex_rules, path, errors) {
       errors.push(`Json doesn't have 'array' with length '${expected.length}' at '${path}' but found 'array' with length '${actual.length}'\n`)
     }
     for (let i = 0; i < expected.length; i++) {
-      _compare(actual[i], expected[i], rules, regex_rules, `${path}[${i}]`);
+      _compare(actual[i], expected[i], rules, regex_rules, `${path}[${i}]`, errors);
     }
   }
 }
@@ -336,7 +332,7 @@ function objectCompare(actual, expected, rules, regex_rules, path, errors) {
       if (!Object.prototype.hasOwnProperty.call(actual, prop)) {
         errors.push(`Json doesn't have property '${prop}' at '${path}'\n`)
       }
-      _compare(actual[prop], expected[prop], rules, regex_rules, `${path}.${prop}`);
+      _compare(actual[prop], expected[prop], rules, regex_rules, `${path}.${prop}`, errors);
     }
   }
 }
